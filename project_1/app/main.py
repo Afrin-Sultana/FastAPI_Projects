@@ -34,6 +34,12 @@ def get_post_by_id(id):
             return p
     return None
 
+def get_post_index(id):
+    for i ,p in enumerate(my_post):
+        if p['id']==id:
+            return i
+    return None
+
 
 
 @app.get("/")
@@ -67,3 +73,26 @@ def create_post(post: Post):
     post_dict['id']= randrange(0, 1000000)
     my_post.append(post_dict)
     return {"data": post_dict}
+
+
+
+@app.delete("/posts/{id}")
+def delete_post_by_id(id: int):
+    index=get_post_index(id)
+
+    if index is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} not found")
+    my_post.pop(index)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@app.put("/posts/{id}")
+def update_post_by_id(id:int, post: Post):
+    index=get_post_index(id)
+
+    if index is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} not found")
+    
+    updated_post=post.dict()
+    updated_post['id']=id
+    my_post[index]=updated_post
+    return {"data": updated_post}
