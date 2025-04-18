@@ -49,6 +49,9 @@ WHERE sequence_schema = 'public';
 ```
 
 
+FOr leeaning
+
+
 
 
 
