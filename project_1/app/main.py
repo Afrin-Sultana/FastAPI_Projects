@@ -3,15 +3,31 @@ from fastapi import Body
 from pydantic import BaseModel
 from typing import Optional
 from random import  randrange
+from psycopg2.extras import RealDictCursor
+import time
+import psycopg2
 
 app= FastAPI()
+
+while True:
+    try:
+
+        conn = psycopg2.connect(dbname="FastAPI" ,user="admin" ,password="admin", host="localhost" )
+        cursor= conn.cursor()
+        print("Database connection was successful")
+        break
+
+    except Exception as error:
+        print("Database connection was not successful")
+        print(f"Error is {error}")
+        time.sleep(2)
+
 
 
 class Post(BaseModel):
     title: str
     content: str
     published:bool=True
-    rating: Optional[int] =None
 
 my_post=[
     {
@@ -48,7 +64,11 @@ def root():
 
 @app.get("/posts")
 def get_posts():
-    return {"data": my_post}
+    cursor.execute("""SELECT * FROM posts""")
+    rows = cursor.fetchall()
+    columns = [desc[0] for desc in cursor.description]
+    posts = [dict(zip(columns, row)) for row in rows]
+    return {"data": posts}
 
 
 @app.get("/posts/{id}")
@@ -68,11 +88,16 @@ def get_post(id: int, response: Response):
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_post(post: Post):
     print(post)
-    print(post.dict())
-    post_dict= post.dict()
-    post_dict['id']= randrange(0, 1000000)
-    my_post.append(post_dict)
-    return {"data": post_dict}
+    # print(post.dict())
+    # post_dict= post.dict()
+    # post_dict['id']= randrange(0, 1000000)
+    # my_post.append(post_dict)
+    cursor.execute("""INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """,(post.title, post.content, post.published))
+    new_post= cursor.fetchone()
+    print("printing new post")
+    print(new_post)
+    conn.commit()
+    return {"data": new_post}
 
 
 
